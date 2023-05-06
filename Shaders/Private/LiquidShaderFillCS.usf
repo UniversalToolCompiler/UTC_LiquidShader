@@ -1,0 +1,61 @@
+﻿/** Copyright 2023, Universal Tool Compiler */
+
+#include "/Engine/Public/Platform.ush"
+int RTargetSize;
+
+Texture2D<float4> RefTexture;
+RWTexture2D<float4> OutputTexture;
+
+bool CheckHittedNormal(float3 NormalDirection)
+{
+	float3 PixelDirection = float3(1,0,0);
+	float HitAngle = acos( dot(NormalDirection, PixelDirection)  / length(NormalDirection) * length(PixelDirection) ) * (180 / 3.14159265359);
+	
+	if(HitAngle < 90)
+		return false;
+
+	return true;
+}
+
+bool CheckIfHitNormal(uint2 ThreadId)
+{
+	if (RefTexture[ThreadId].x != 0 || RefTexture[ThreadId].y != 0 || RefTexture[ThreadId].z != 0)
+		return true;
+	
+	return false;
+}
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void MainCS(uint3 ThreadId : SV_DispatchThreadID)
+{
+	int ThreadIdX = ThreadId.x;
+	
+	if(CheckIfHitNormal(ThreadId.xy))
+	{
+		OutputTexture[ThreadId.xy] = float4(1,1,1,1);
+		
+		if(CheckHittedNormal(RefTexture[ThreadId.xy].xyz) && !CheckIfHitNormal(uint2(ThreadIdX + 1, ThreadId.y)))
+		{
+			uint2 PixelTemp[2048];
+			for (int i = 1; i < RTargetSize - ThreadIdX; i++)
+			{
+				uint2 PixelPosition = uint2(ThreadIdX + i, ThreadId.y);
+
+				PixelTemp[i - 1] = PixelPosition;
+				if( i == RTargetSize - ThreadIdX - 1)
+				{
+					for(int j = 0; j <= i - 1; j++)
+					{
+						OutputTexture[PixelTemp[j]] = float4(0,0,0,0);
+					}
+					break;
+				}
+					
+				if(CheckIfHitNormal(PixelPosition))
+					break; 
+				
+				OutputTexture[PixelPosition] = float4(1,1,1,1);
+			}
+		}
+	}
+}

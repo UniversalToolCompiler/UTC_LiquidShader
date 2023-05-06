@@ -1,0 +1,75 @@
+﻿/** Copyright 2023, Universal Tool Compiler */
+
+#include "/Engine/Public/Platform.ush"
+
+int RTargetSize;
+Texture2D<float4> RefTexture;
+RWTexture2D<float4> OutputTexture;
+
+bool CleanUpInt(uint3 ThreadId, int MinPixelError)
+{
+    bool bCleanUp = false;
+    if(RefTexture[uint2(ThreadId.x, ThreadId.y + 2)].x == 1 && RefTexture[uint2(ThreadId.x, ThreadId.y - 2)].x == 1)
+    {
+        for (int i = 0; i <= MinPixelError; i++)
+        {
+            if(RefTexture[uint2(ThreadId.x + i, ThreadId.y)].x == 0 && OutputTexture[uint2(ThreadId.x + i, ThreadId.y)].z != 1 && (RefTexture[uint2(ThreadId.x + i, ThreadId.y + 1)].x == 1 || RefTexture[uint2(ThreadId.x + i, ThreadId.y - 1)].x == 1 ))
+                bCleanUp = true;
+            else
+            {
+                bCleanUp = false;
+                break;
+            }
+        }
+    }
+
+    return bCleanUp;
+}
+
+bool CleanUpExt(uint3 ThreadId, int MinPixelError)
+{
+    bool bCleanUp = false;
+    if(RefTexture[uint2(ThreadId.x, ThreadId.y + 2)].x != 1 && RefTexture[uint2(ThreadId.x, ThreadId.y - 2)].x != 1)
+    {
+        for (int i = 0; i <= MinPixelError; i++)
+        {
+            if(RefTexture[uint2(ThreadId.x + i, ThreadId.y)].x == 1 && RefTexture[uint2(ThreadId.x + i, ThreadId.y + 1)].x == 0 && RefTexture[uint2(ThreadId.x + i, ThreadId.y - 1)].x == 0)
+                bCleanUp = true;
+            else
+            {
+                bCleanUp = false;
+                break;
+            }
+        }
+    }
+    return bCleanUp;
+}
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void MainCS(uint3 ThreadId : SV_DispatchThreadID)
+{
+    if (CleanUpExt(ThreadId, 8))
+    {
+        for (int i = 0; i < RTargetSize - ThreadId.x - 1; i++ )
+        {
+            if(RefTexture[uint2(ThreadId.x + i, ThreadId.y)].x == 1 && RefTexture[uint2(ThreadId.x + i, ThreadId.y + 1)].x == 1 && RefTexture[uint2(ThreadId.x + i, ThreadId.y - 1)].x == 1)
+                break;
+    
+            OutputTexture[uint2(ThreadId.x + i , ThreadId.y)] = float4(0,0,1,0);
+        }
+    }
+    else if(CleanUpInt(ThreadId,8))
+    {
+        for (int i = 0; i < RTargetSize - ThreadId.x - 1; i++ )
+        {
+            if(RefTexture[uint2(ThreadId.x + i, ThreadId.y)].x == 1 || (RefTexture[uint2(ThreadId.x + i, ThreadId.y + 1)].x == 0 && RefTexture[uint2(ThreadId.x + i, ThreadId.y - 1)].x == 0))
+                break;
+    
+            OutputTexture[uint2(ThreadId.x + i , ThreadId.y)] = float4(1,0,0,1);
+        }
+    }
+    else if (RefTexture[ThreadId.xy].x == 1)
+    {
+        OutputTexture[ThreadId.xy] = RefTexture[ThreadId.xy];
+    }
+}

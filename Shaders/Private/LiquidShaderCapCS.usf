@@ -1,0 +1,224 @@
+﻿/** Copyright 2023, Universal Tool Compiler */
+
+#include "/Engine/Public/Platform.ush"
+
+//Inputs
+float LiquidOffset;
+int CapRTSize;
+
+/** SM properties */
+float2 BoundRange;
+float3 BBOriginPosition;
+float3 WorldPosition;
+float4 SectionRange[16];
+float4x4 WorldTransform;
+
+/** Buffers */
+StructuredBuffer<float3> VertexBuffer;
+Buffer<uint> IndexBuffer;
+int BufferSize;
+
+//Output
+RWTexture2D<float4> OutputTexture;
+
+void IntersectionPosition(float3 StartPosition, float3 TargetPositionA, float3 TargetPositionB, out float3 OutA, out float3 OutB)
+{
+	/** Intersection A */
+	float AlphaA = (LiquidOffset - StartPosition.z) / (TargetPositionA.z - StartPosition.z);
+	OutA = lerp(StartPosition, TargetPositionA, AlphaA);
+
+	/** Intersection B */
+	float AlphaB = (LiquidOffset - StartPosition.z) / (TargetPositionB.z - StartPosition.z);
+	OutB = lerp(StartPosition, TargetPositionB, AlphaB);
+	
+}
+
+void SortVertexArray(in out float3 Vertices[3])
+{
+	for (int i = 0; i < 2; i++)
+	{
+		int MinIdx = i;
+		
+		for(int j = i + 1; j < 3; j++)
+		{
+			if(Vertices[j].z < Vertices[MinIdx].z)
+				MinIdx = j;
+		}
+
+		float3 TempValue = Vertices[MinIdx];
+		Vertices[MinIdx] = Vertices[i];
+		Vertices[i] = TempValue;
+	}
+}
+
+bool IsTrisIntersected(float3 Vertices[3])
+{
+	if((Vertices[0].z > LiquidOffset && Vertices[1].z > LiquidOffset && Vertices[2].z > LiquidOffset))
+		return false;
+
+	if((Vertices[0].z < LiquidOffset && Vertices[1].z < LiquidOffset && Vertices[2].z < LiquidOffset))
+		return false;
+
+	return true;
+}
+
+void PerformIntersection(float3 Vertices[3], out float3 IntersectionA, out float3 IntersectionB)
+{
+	SortVertexArray(Vertices);
+		
+	float3 OutA, OutB;
+		
+	if(Vertices[1].z > LiquidOffset)
+		IntersectionPosition(Vertices[0], Vertices[1], Vertices[2], OutA, OutB);
+	else
+		IntersectionPosition(Vertices[2], Vertices[0], Vertices[1], OutA, OutB);
+
+	IntersectionA = OutA;
+	IntersectionB = OutB;
+}
+
+float3 TransformV(float3 LocalPosition)
+{
+	return mul(float4(LocalPosition - BBOriginPosition, 1), WorldTransform ).xyz;
+}
+
+float2 RemapRangef2(float2 InMin, float2 InMax, float2 OutMin, float2 OutMax, float2 InValue)
+{
+	float2 InRange = InMax - InMin;
+	if(InRange.x == 0 && InRange.y == 0)
+	{
+		return OutMin;
+	}
+	else
+	{
+		float2 OutRange = OutMax - OutMin;
+		return (((InValue - InMin) * OutRange) / InRange ) + OutMin;
+	}
+}
+
+void DrawLine(float2 DrawStart, float2 DrawEnd, float3 FaceNormal)
+{
+	DrawStart = DrawStart - WorldPosition.xy;
+	DrawEnd = DrawEnd - WorldPosition.xy;
+	
+	int2 RangedStart = RemapRangef2(BoundRange.x, BoundRange.y, 1, CapRTSize - 2, DrawStart);
+	int2 RangedEnd = RemapRangef2(BoundRange.x, BoundRange.y, 1, CapRTSize - 2, DrawEnd);
+
+	if(RangedEnd.x == 0 || RangedEnd.y == 0 )
+		return;
+	
+	int Steps;
+	float x, y, dx, dy;
+	dx = RangedEnd.x - RangedStart.x;
+	dy = RangedEnd.y - RangedStart.y;
+		
+	if (abs(dx) >= abs(dy))
+		Steps = abs(dx);
+	else
+		Steps = abs(dy);
+		
+	dx = dx / Steps;
+	dy = dy / Steps;
+		
+	x = RangedStart.x;
+	y = RangedStart.y;
+		
+	for(int i = 0; i <= Steps; i++)
+	{
+		if(OutputTexture[int2(x,y)].x != 0 || OutputTexture[int2(x,y)].y != 0 || OutputTexture[int2(x,y)].z != 0 )
+		{
+			OutputTexture[int2(x,y)] = (OutputTexture[int2(x,y)] + float4(FaceNormal,1)) / 2;
+		}
+		else
+		{
+			OutputTexture[int2(x,y)] = float4(FaceNormal,1);
+		}
+		
+		x = x + dx;
+		y = y + dy;
+	}
+}
+
+void ComputeNormalDirection(float3 Vertices[3], inout float3 NormalDirection)
+{
+	float3 EdgeA = Vertices[1] - Vertices[0];
+	float3 EdgeB = Vertices[2] - Vertices[0];
+	NormalDirection = normalize(cross(EdgeA, EdgeB)) * -1 ;
+}
+
+bool CheckInSectionRange(int VertexIndex)
+{
+	for(int i = 0; i < 16; i++)
+	{
+		if(SectionRange[i].x <= VertexIndex && VertexIndex <= SectionRange[i].y)
+			return true;
+
+		if(SectionRange[i].x == 0 && SectionRange[i].y == 0 )
+			return false;
+	}
+	
+	return false;
+}
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void MainCS(uint3 ThreadId : SV_DispatchThreadID)
+{
+	int ThreadIdX = ThreadId.x * 9;
+	float3 IntersectionA, IntersectionB;
+
+/** ---------------------------------------------------------------------- Triangle A ----------------------------------------------------------------------*/
+
+	if(CheckInSectionRange(IndexBuffer[ThreadIdX]))
+	{
+		float3 VertexTrisA[3];
+		VertexTrisA[0] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX ]]);
+		VertexTrisA[1] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 1]]);
+		VertexTrisA[2] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 2]]);
+
+		if(IsTrisIntersected(VertexTrisA))
+		{
+			float3 NormalTrisA;
+			ComputeNormalDirection(VertexTrisA, NormalTrisA);
+
+			PerformIntersection(VertexTrisA, IntersectionA, IntersectionB);
+			DrawLine(IntersectionA.xy, IntersectionB.xy, NormalTrisA);
+		}
+	}
+	
+/** ---------------------------------------------------------------------- Triangle B ----------------------------------------------------------------------*/
+
+	if(CheckInSectionRange(IndexBuffer[ThreadIdX + 3]))
+	{
+		float3 VertexTrisB[3];
+		VertexTrisB[0] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 3]]);
+		VertexTrisB[1] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 4]]);
+		VertexTrisB[2] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 5]]);
+	
+		if(IsTrisIntersected(VertexTrisB))
+		{
+			float3 NormalTrisB;
+			ComputeNormalDirection(VertexTrisB, NormalTrisB);
+		
+			PerformIntersection(VertexTrisB, IntersectionA, IntersectionB);
+			DrawLine(IntersectionA.xy, IntersectionB.xy, NormalTrisB);
+		}
+	}
+/** ---------------------------------------------------------------------- Triangle C ----------------------------------------------------------------------*/
+
+	if(CheckInSectionRange(IndexBuffer[ThreadIdX + 6]))
+	{
+		float3 VertexTrisC[3];
+		VertexTrisC[0] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 6]]);
+		VertexTrisC[1] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 7]]);
+		VertexTrisC[2] = TransformV(VertexBuffer[IndexBuffer[ThreadIdX + 8]]);
+	
+		if(IsTrisIntersected(VertexTrisC))
+		{
+			float3 NormalTrisC;
+			ComputeNormalDirection(VertexTrisC, NormalTrisC);
+
+			PerformIntersection(VertexTrisC, IntersectionA, IntersectionB);
+			DrawLine(IntersectionA.xy, IntersectionB.xy, NormalTrisC);
+		}
+	}
+}
