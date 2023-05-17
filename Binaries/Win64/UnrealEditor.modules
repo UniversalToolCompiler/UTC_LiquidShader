@@ -1,0 +1,8 @@
+{
+	"BuildId": "25360045",
+	"Modules": 
+	{
+		"UTC_LiquidShader": "UnrealEditor-UTC_LiquidShader.dll",
+		"UTC_LiquidShaderCS": "UnrealEditor-UTC_LiquidShaderCS.dll"
+	}
+}
