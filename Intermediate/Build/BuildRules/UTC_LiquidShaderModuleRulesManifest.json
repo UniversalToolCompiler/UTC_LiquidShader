@@ -1,0 +1,7 @@
+{
+	"SourceFiles": [
+		"E:\\Projects\\UTC_LiquidShader_UE5\\HostProject\\Plugins\\UTC_LiquidShader\\Source\\UTC_LiquidShaderCS\\UTC_LiquidShaderCS.build.cs",
+		"E:\\Projects\\UTC_LiquidShader_UE5\\HostProject\\Plugins\\UTC_LiquidShader\\Source\\UTC_LiquidShader\\UTC_LiquidShader.Build.cs"
+	],
+	"EngineVersion": "5.3.0"
+}

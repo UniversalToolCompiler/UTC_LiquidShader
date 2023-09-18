@@ -1,0 +1,13 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.UTC_LiquidShader.cpp.obj": [
+			"LiquidShaderComponent.gen.cpp.obj",
+			"UTC_LiquidShader.init.gen.cpp.obj",
+			"UTC_LSInterface.gen.cpp.obj",
+			"LiquidShaderComponent.cpp.obj",
+			"UTC_LiquidShader.cpp.obj",
+			"UTC_LSInterface.cpp.obj"
+		]
+	}
+}

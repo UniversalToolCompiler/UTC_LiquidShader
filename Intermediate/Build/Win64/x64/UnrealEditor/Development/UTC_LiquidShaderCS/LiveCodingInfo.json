@@ -1,0 +1,9 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.UTC_LiquidShaderCS.cpp.obj": [
+			"UTC_LiquidShaderCSManager.cpp.obj",
+			"UTC_LiquidShaderCSModule.cpp.obj"
+		]
+	}
+}

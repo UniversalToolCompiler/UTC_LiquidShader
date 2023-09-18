@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-UTC_LiquidShaderCS.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"E:\Projects\UTC_LiquidShader_UE5\HostProject\Intermediate\Build\Win64\x64\UnrealEditor\Development\Engine\SharedPCH.Engine.Cpp20.h.obj"
+"E:\Projects\UTC_LiquidShader_UE5\HostProject\Plugins\UTC_LiquidShader\Intermediate\Build\Win64\x64\UnrealEditor\Development\UTC_LiquidShaderCS\Module.UTC_LiquidShaderCS.cpp.obj"
+"E:\Projects\UTC_LiquidShader_UE5\HostProject\Plugins\UTC_LiquidShader\Intermediate\Build\Win64\x64\UnrealEditor\Development\UTC_LiquidShaderCS\Default.rc2.res"
+/OUT:"E:\Projects\UTC_LiquidShader_UE5\HostProject\Plugins\UTC_LiquidShader\Intermediate\Build\Win64\x64\UnrealEditor\Development\UTC_LiquidShaderCS\UnrealEditor-UTC_LiquidShaderCS.lib"
