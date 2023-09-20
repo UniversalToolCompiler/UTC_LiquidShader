@@ -86,7 +86,12 @@ void FUTC_LiquidShaderCSManager::Execute_IntersectionRenderThread(FRHICommandLis
 	}
 	
 	PassParameters->VertexBuffer = VertexBuffer->PositionVertexBuffer.GetSRV();
-	PassParameters->IndexBuffer= RHICmdList.CreateShaderResourceView(IndexBuffer->IndexBufferRHI);
+	
+	FRHIViewDesc::FBufferSRV::FInitializer IndexBufferSRV = FRHIViewDesc::CreateBufferSRV();
+	IndexBufferSRV.SetType(FRHIViewDesc::EBufferType::Typed);
+	IndexBufferSRV.SetFormat(PF_R16_UINT);
+	
+	PassParameters->IndexBuffer= RHICmdList.CreateShaderResourceView(IndexBuffer->IndexBufferRHI, IndexBufferSRV);
 	
 	PassParameters->BufferSize = BufferSize;
 	
