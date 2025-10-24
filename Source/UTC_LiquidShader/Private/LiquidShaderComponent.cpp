@@ -478,7 +478,8 @@ void ULiquidShaderComponent::ComputeLiquidVolume(float DeltaTime, bool bInitiali
 	FHitResult LOutHit;
 	FCollisionQueryParams CollisionParams;
 	CollisionParams.bTraceComplex = true;
-
+	CollisionParams.bReturnFaceIndex = true;
+	
 	TArray<FVector2d> VoxelLayers;
 	float MaxLocalBound = SMLiquidOwner->GetBoundingBox().Max.Z * SMComponent->GetComponentScale().Z;
 	float MinLocalBound = SMLiquidOwner->GetBoundingBox().Min.Z * SMComponent->GetComponentScale().Z;
@@ -529,6 +530,7 @@ void ULiquidShaderComponent::ComputeLiquidVolume(float DeltaTime, bool bInitiali
 					else if (bHit)
 					{
 						XIndex += ROutHit.Distance / VoxelSize;
+						RVectorTrace = false;
 					}
 					else
 					{

@@ -36,25 +36,29 @@ void MainCS(uint3 ThreadId : SV_DispatchThreadID)
 		
 		if(CheckHittedNormal(RefTexture[ThreadId.xy].xyz) && !CheckIfHitNormal(uint2(ThreadIdX + 1, ThreadId.y)))
 		{
-			uint2 PixelTemp[2048];
-			for (int i = 1; i < RTargetSize - ThreadIdX; i++)
-			{
-				uint2 PixelPosition = uint2(ThreadIdX + i, ThreadId.y);
+			bool bClear = true;
 
-				PixelTemp[i - 1] = PixelPosition;
-				if( i == RTargetSize - ThreadIdX - 1)
+			for (int i = 1; i <= RTargetSize - ThreadIdX - 1; i++)
+			{
+				const uint2 PixelPosition = uint2(ThreadIdX + i, ThreadId.y);
+
+				if (CheckIfHitNormal(PixelPosition))
 				{
-					for(int j = 0; j <= i - 1; j++)
-					{
-						OutputTexture[PixelTemp[j]] = float4(0,0,0,0);
-					}
+					bClear = false;
 					break;
 				}
-					
-				if(CheckIfHitNormal(PixelPosition))
-					break; 
-				
-				OutputTexture[PixelPosition] = float4(1,1,1,1);
+
+				OutputTexture[PixelPosition] = float4(1, 1, 1, 1);
+			}
+
+			if (bClear)
+			{
+				for (int i = 1; i <= RTargetSize - ThreadIdX - 1; i++)
+				{
+					const uint2 PixelPosition = uint2(ThreadIdX + i, ThreadId.y);
+
+					OutputTexture[PixelPosition] = float4(0, 0, 0, 0);
+				}
 			}
 		}
 	}
