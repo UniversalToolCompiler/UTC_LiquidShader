@@ -1,0 +1,8 @@
+# Unreal build output - never commit
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.pdb
+.vs/
+.idea/
