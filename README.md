@@ -1,6 +1,10 @@
 # UTC Liquid Shader
 
-Liquid Shader Plugin for UE5.3 using the new Substrate material.
+> [!NOTE]
+> **This is the free legacy version (UE 5.2 / 5.3), kept here under the MIT license and no longer updated.**
+> **UTC Liquid Shader Pro**, rebuilt for production Substrate in UE 5.7+ with new features, is coming soon on Fab.
+
+Liquid shader plugin for UE 5.2 and 5.3, using the Substrate material system (experimental at the time).
 
 * **Download it** [here](https://github.com/UniversalToolCompiler/UTC_LiquidShader/releases)
 * **How to use it** [here](https://github.com/UniversalToolCompiler/UTC_LiquidShader/wiki/UE5-Dynamic-Liquid-Shader:-Tutorial)
